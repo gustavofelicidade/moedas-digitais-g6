@@ -4,7 +4,6 @@ Projeto do **Grupo 6: Rio de Janeiro I** para o 7º Desafio de Dados (Datathon) 
 
 ## Equipe
 
-- Anton Gasparini Lage Brasileiro Waehneldt — `anton.gaspw@gmail.com`
 - Arick Jurdan dos Reis — `arickjurdan.20221@poli.ufrj.br`
 - Bruno Lins — `linsbruno21@gmail.com`
 - Giulia Tafuri Rodrigues da Silva — `giutafuri@gmail.com`
