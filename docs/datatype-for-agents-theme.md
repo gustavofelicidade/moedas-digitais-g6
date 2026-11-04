@@ -4,8 +4,8 @@ Com base no EDA, o ideal é buscar dados que permitam relacionar **tempo, cartei
 
 Pesquise por:
 
-- `Ethereum transactions dataset CSV`
-- `EVM transaction history dataset`
+- `Ethereum transactions dataset CSV` -> Gus baixou: http://kaggle.com/datasets/chaitya0623/ethereum-transactions-for-fraud-detection
+- `EVM transaction history dataset`.  -> Dados grandes:  https://huggingface.co/collections/BlockDB/blockdb-full-evm-research-datasets-10-years
 - `Ethereum transaction traces dataset`
 - `blockchain transactions with gas price and receipt status`
 - `Ethereum wallet transaction dataset`

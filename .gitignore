@@ -4,3 +4,4 @@ __pycache__/
 data/
 .DS_Store
 data/Ethereum-Transactions-for-Fraud-Detection
+.env

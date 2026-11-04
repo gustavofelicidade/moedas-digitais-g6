@@ -7,12 +7,14 @@ transactions or writes to the blockchain.
 
 from __future__ import annotations
 
+import os
 from dataclasses import dataclass, asdict
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Iterable, Mapping, Sequence
 
 import pandas as pd
+from dotenv import load_dotenv
 
 
 DEFAULT_TEXT_KEYS = (
@@ -98,6 +100,10 @@ class ENSSupport:
         network: str = "ethereum",
         metadata_path: str | Path = "data/wallet_metadata.csv",
     ) -> None:
+        # Carrega .env do diretório de execução sem sobrescrever variáveis já
+        # exportadas no ambiente do processo.
+        project_env = Path(__file__).resolve().parents[1] / ".env"
+        load_dotenv(project_env)
         try:
             from web3 import Web3
             from ens import ENS
@@ -108,8 +114,11 @@ class ENSSupport:
             ) from exc
 
         if web3_instance is None:
+            rpc_url = rpc_url or os.getenv("ETH_RPC_URL")
             if not rpc_url:
-                raise ValueError("Informe rpc_url ou um web3_instance configurado.")
+                raise ValueError(
+                    "Informe rpc_url ou defina ETH_RPC_URL no ambiente/.env."
+                )
             web3_instance = Web3(Web3.HTTPProvider(rpc_url, request_kwargs={"timeout": 30}))
 
         self.w3 = web3_instance
