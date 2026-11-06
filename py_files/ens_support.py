@@ -7,6 +7,7 @@ transactions or writes to the blockchain.
 
 from __future__ import annotations
 
+import argparse
 import os
 from dataclasses import dataclass, asdict
 from datetime import datetime, timezone
@@ -264,3 +265,81 @@ class ENSSupport:
             output_path=output_path,
             skip_existing=skip_existing,
         )
+
+
+def main() -> None:
+    """Run a small ENS enrichment job from the command line."""
+    parser = argparse.ArgumentParser(
+        description="Enriquece carteiras Ethereum com metadados ENS."
+    )
+    parser.add_argument(
+        "--input",
+        default="data/Ethereum-Transactions-for-Fraud-Detection/first_order_df.csv",
+        help="CSV de entrada com a coluna wallet_from.",
+    )
+    parser.add_argument(
+        "--output",
+        default="data/wallet_metadata.csv",
+        help="CSV onde os metadados serão adicionados.",
+    )
+    parser.add_argument(
+        "--top",
+        type=int,
+        default=500,
+        help="Quantidade de carteiras mais frequentes a consultar; use 0 para todas.",
+    )
+    parser.add_argument(
+        "--address-column",
+        default="wallet_from",
+        help="Nome da coluna com os endereços Ethereum.",
+    )
+    args = parser.parse_args()
+
+    print(f"Lendo: {args.input}")
+    frame = pd.read_csv(args.input, low_memory=False)
+    address_column = args.address_column
+    if address_column not in frame.columns:
+        fallback_columns = {
+            "wallet_from": ["From", "from", "sender", "address_from", "source"],
+            "wallet_to": ["To", "to", "receiver", "address_to", "destination"],
+        }
+        address_column = next(
+            (column for column in fallback_columns.get(address_column, []) if column in frame.columns),
+            None,
+        )
+    if address_column is None:
+        raise KeyError(
+            f"Coluna não encontrada: {args.address_column}. "
+            f"Colunas disponíveis: {list(frame.columns)}"
+        )
+
+    print(f"Coluna de endereços: {address_column}")
+    addresses = frame[address_column].dropna().value_counts()
+    if args.top > 0:
+        addresses = addresses.head(args.top)
+
+    print(f"Carteiras únicas selecionadas: {len(addresses):,}")
+    ens = ENSSupport(metadata_path=args.output)
+    print(f"RPC conectado: {ens.w3.is_connected()}")
+
+    result = ens.enrich_addresses(
+        addresses.index,
+        output_path=args.output,
+    )
+
+    print(f"Registros adicionados: {len(result):,}")
+    if not result.empty:
+        print("\nResumo:")
+        print(result[[
+            "wallet_address",
+            "wallet_type",
+            "ens_name",
+            "ens_location",
+            "lookup_status",
+        ]].to_string(index=False))
+    else:
+        print("Nenhum registro novo foi adicionado; talvez as carteiras já existam no CSV.")
+
+
+if __name__ == "__main__":
+    main()
