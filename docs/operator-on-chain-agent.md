@@ -71,9 +71,7 @@ Implementar em `app/features/` funções determinísticas e independentes de Lan
 
 As funções recebem DataFrame com colunas canônicas e devolvem valores e metadados da janela usada. Separar cálculo de features de score/política; não atribuir fraude, IA, identidade ou região. Usar `first_order_df.csv` para validar a integração inicial. Registrar denominadores, tratamento de linhas repetidas e dados ausentes.
 
-Uma mensagem que pode ser enviada ao Bruno:
 
-> O tema do grupo está definido como “Agentes de IA e operações on-chain: stablecoins, governança e responsabilização”. Você pode começar por `app/features/`: implemente features determinísticas por carteira/janela (volume, atividade, destinos novos, taxa de erro, intervalos e concentração temporal), usando o schema canônico e o `first_order_df.csv`. Mantenha features separadas das regras de decisão e do LangGraph. Não chame esses sinais de fraude nem de agente de IA. Deixe a unidade de `Value` explícita e não converta para USD sem fonte de preço. Depois documente as colunas exigidas e as limitações; isso deixa o componente pronto para receber dados de stablecoins.
 
 ### Trilha de dados — primeira extensão stablecoin
 
