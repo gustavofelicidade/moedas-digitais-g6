@@ -1,148 +1,111 @@
-# oonca-operator-on-chain-agent
+# OONCA — operador on-chain com apoio de IA
 
-Até o momento, o agente poderia atuar principalmente como um agente de **monitoramento, análise e recomendação** de operações on-chain.
+## Tema definido
 
-Com os dados disponíveis, ele poderia:
+**Agentes de IA e operações on-chain: stablecoins, governança e responsabilização.**
 
-- identificar carteiras mais ativas;
-- distinguir EOAs de contratos;
-- calcular taxa de erro por carteira;
-- detectar concentração de volume;
-- encontrar padrões repetitivos ou possíveis sinais de automação;
-- monitorar carteiras com muitos destinos;
-- calcular primeira e última atividade;
-- gerar alertas para comportamentos anômalos;
-- ranquear carteiras por risco operacional;
-- recomendar investigação de determinadas transações;
-- produzir relatórios de atividade por carteira.
+O OONCA será apresentado como um agente de monitoramento e apoio à decisão para operadores que preparam operações on-chain. Ele reúne evidências, calcula indicadores determinísticos e explica os motivos para uma recomendação. Nesta etapa, não assina nem envia transações.
 
-Um fluxo possível seria:
+## O que o primeiro protótipo faz
 
-```text
-transações on-chain
-        ↓
-perfil das carteiras
-        ↓
-detecção de padrões e anomalias
-        ↓
-score de risco
-        ↓
-alerta ou recomendação
-```
+Com `first_order_df.csv` e `wallet_metadata.csv`, o protótipo:
 
-Por exemplo, o agente poderia dizer:
+- perfila o histórico de uma carteira de origem;
+- verifica se o destino já apareceu no histórico observado;
+- calcula taxa histórica de `isError`, valores e atividade;
+- acrescenta tipo de carteira quando existe metadata;
+- pontua alguns sinais e retorna `APPROVE`, `REVIEW` ou `BLOCK`;
+- usa opcionalmente o LLM para explicar a decisão calculada pelas regras.
 
-> “A carteira X realizou 8.744 operações, interagiu com 48 destinos, possui taxa de erro de 71,45% e apresenta padrão concentrado de atividade. Recomenda-se revisão manual.”
+O protótipo **não resolve nem confirma uma fraude específica**. A pontuação atual é uma heurística demonstrativa, não uma probabilidade de fraude. `isError` representa falha/reversão conforme o dataset, não fraude. `BLOCK` só é retornado quando uma regra explícita de limite configurada pelo usuário é violada. `APPROVE` significa apenas que as regras atuais não solicitaram revisão.
 
-Isso seria uma recomendação baseada em dados, não uma acusação de fraude.
+O dataset cobre transações Ethereum de 2016 a 2019 e não identifica token, stablecoin, protocolo, função do contrato, gas, valor em USD, fraude confirmada, agente de IA ou operador. `wallet_type` e ENS foram consultados posteriormente, no estado atual da rede. Portanto, o primeiro protótipo serve para demonstrar uma triagem baseada em histórico, não para afirmar comportamento contemporâneo nem detectar agentes de IA.
 
-O agente ainda não consegue, com segurança:
+## Quais abusos ou fraudes são alvos futuros
 
-- afirmar quem é o operador da carteira;
-- identificar a região geográfica do operador;
-- afirmar que uma carteira pertence a um agente de IA;
-- classificar `isError` como fraude;
-- saber qual protocolo foi utilizado;
-- votar em governança;
-- executar transações;
-- movimentar fundos;
-- assinar operações.
+São hipóteses de detecção, condicionadas a dados apropriados. Um alerta aponta um padrão compatível com risco; investigação adicional é necessária antes de chamá-lo de fraude.
 
-Para executar operações reais, seriam necessários contratos/protocolos específicos, regras de risco, uma carteira com capacidade de assinatura, limites de valor e, idealmente, aprovação humana. Portanto, o estágio atual é mais adequado para um agente de **observação, auditoria e apoio à decisão**, não para um agente autônomo que movimenta ativos.
+| Hipótese | Evidências/dados necessários | Estado |
+|---|---|---|
+| Transferência incomum ou destino novo | histórico por carteira, valor, destinatário e política de limite | Triagem parcial já existe para ETH |
+| Uso anômalo de stablecoin ou movimentação em torno de depeg | eventos ERC-20, identificação de token e série histórica de preço/liquidez | Ainda sem dados |
+| Wash trading ou volume artificial em DEX | swaps decodificados, pool/token, participantes e sequência temporal | Ainda sem dados |
+| Ataque ou captura de governança | propostas, votos, poder delegado, delegações, quórum e execução | Ainda sem dados |
+| Rug pull, exploit ou desvio de fundos | eventos/trace de contratos, fluxo de ativos e rótulos de incidentes validados | Ainda sem dados |
+| Automação suspeita ou operação de agente | sequência temporal, repetição, calldata, identificação validada e logs de decisão | Apenas proxies comportamentais; não prova IA |
+| Falha operacional ou violação de política | status de execução, gas, limites, aprovação e identidade do operador | Erros históricos parcialmente disponíveis; política/auditoria ausentes |
 
-O agente seria mais útil **imediatamente antes da assinatura ou execução de uma operação**, mas não necessariamente exigiria revisão humana para cada compra.
+## MVP recomendado para o hackathon
 
-### Quando ele seria acionado?
+Construir uma demonstração de **revisão prévia de uma operação com stablecoin**. O operador informa carteira de origem, destino, token, valor e operação proposta. O agente retorna evidências observadas, indicadores, recomendação e explicação auditável. Inicialmente, a recomendação deve priorizar `REVIEW` quando faltam dados ou contexto.
 
-Antes de operações como:
-
-- transferência de ETH ou stablecoins;
-- swap em uma DEX;
-- depósito ou saque em protocolo DeFi;
-- empréstimo ou liquidação;
-- mint ou burn de stablecoin;
-- interação com contrato novo;
-- voto de governança;
-- movimentação acima de determinado limite.
-
-O fluxo seria:
+Fluxo desejado:
 
 ```text
-operador ou sistema cria a operação
-              ↓
-agente analisa destino, valor, contrato e histórico
-              ↓
-agente calcula risco e verifica políticas
-              ↓
-aprova, bloqueia ou solicita revisão humana
-              ↓
-transação é assinada e enviada
+operação proposta
+       ↓
+validação do formato e identificação do token/operação
+       ↓
+consulta de histórico e metadata disponível
+       ↓
+features e regras explícitas de risco
+       ↓
+APPROVE / REVIEW / BLOCK + evidências e limitações
+       ↓
+explicação em linguagem natural pelo LLM
 ```
 
-### Seria para cada compra?
+O LLM explica os resultados recebidos; não cria rótulos de fraude, não inventa evidência e não substitui as regras de decisão. Cada análise deve preservar fonte, período coberto, timestamp de consulta, regra aplicada e dados ausentes.
 
-Tecnicamente, poderia analisar cada operação, mas a resposta do agente poderia variar:
+## Trabalho que pode começar agora
 
-- operação pequena e conhecida: aprovar automaticamente;
-- contrato conhecido, mas valor alto: aprovar com alerta;
-- carteira nova ou contrato não verificado: exigir revisão;
-- taxa de erro ou comportamento anômalo: bloquear;
-- operação incompatível com a política: impedir assinatura.
+### Trilha Bruno — features e contrato de dados
 
-Assim, o agente funcionaria como um **filtro de risco antes da execução**, e não necessariamente como um aprovador humano de cada transação.
+Implementar em `app/features/` funções determinísticas e independentes de LangGraph para calcular, por carteira e janela temporal:
 
-### Como seria usado no hackathon?
+1. volume e número de operações;
+2. destinos únicos e proporção de destinos novos;
+3. taxa de erro, com denominador e quantidade mínima de observações;
+4. intervalo entre transações, atividade por janela e concentração temporal;
+5. mediana e percentis do valor, sem converter para USD sem preço e unidade confirmados.
 
-Para o hackathon, o mais realista seria apresentar um protótipo que:
+As funções recebem DataFrame com colunas canônicas e devolvem valores e metadados da janela usada. Separar cálculo de features de score/política; não atribuir fraude, IA, identidade ou região. Usar `first_order_df.csv` para validar a integração inicial. Registrar denominadores, tratamento de linhas repetidas e dados ausentes.
 
-1. recebe uma operação hipotética;
-2. consulta o histórico da carteira;
-3. verifica se a carteira é EOA ou contrato;
-4. calcula volume, frequência, contrapartes e taxa de erro;
-5. gera um score de risco;
-6. retorna uma decisão:
+Uma mensagem que pode ser enviada ao Bruno:
 
-```text
-APPROVE
-REVIEW
-BLOCK
-```
+> O tema do grupo está definido como “Agentes de IA e operações on-chain: stablecoins, governança e responsabilização”. Você pode começar por `app/features/`: implemente features determinísticas por carteira/janela (volume, atividade, destinos novos, taxa de erro, intervalos e concentração temporal), usando o schema canônico e o `first_order_df.csv`. Mantenha features separadas das regras de decisão e do LangGraph. Não chame esses sinais de fraude nem de agente de IA. Deixe a unidade de `Value` explícita e não converta para USD sem fonte de preço. Depois documente as colunas exigidas e as limitações; isso deixa o componente pronto para receber dados de stablecoins.
 
-Exemplo:
+### Trilha de dados — primeira extensão stablecoin
 
-```json
-{
-  "wallet": "0x...",
-  "operation": "transfer",
-  "amount": 2500,
-  "wallet_type": "eoa",
-  "historical_error_rate": 0.18,
-  "risk_score": 0.72,
-  "decision": "REVIEW",
-  "reasons": [
-    "valor acima do padrão histórico",
-    "destinatário nunca utilizado",
-    "carteira possui alta taxa de falha"
-  ]
-}
-```
+Em paralelo, escolher uma rede e um protocolo ou stablecoin para delimitar a coleta. Procurar ao menos:
 
-### Seria integrado ao sistema da FGV?
+- transferências ERC-20 com timestamp/bloco, hash, `from`, `to`, contrato do token e valor bruto;
+- metadados do token (decimais, símbolo, endereço e rede);
+- preço histórico em USD para a mesma rede temporal;
+- se o foco for DeFi, eventos de swap/pool ou chamadas decodificadas;
+- documentação de fonte, licença, janela temporal, extração e cobertura.
 
-Provavelmente não diretamente. A menos que os organizadores forneçam uma API, carteira, protocolo ou ambiente de teste, o projeto deveria ser apresentado como uma **camada independente de monitoramento e controle**.
+Não é necessário baixar todos os conjuntos de dados antes de avançar. Primeiro validar um recorte pequeno e reproduzível. A integração não deve chamar qualquer transferência de stablecoin de “compra”: a operação precisa ser classificada por evento/contrato.
 
-Uma integração real poderia ocorrer entre:
+## Papéis sugeridos para os diretórios
 
-```text
-sistema financeiro/tesouraria
-        ↓
-agente de risco
-        ↓
-carteira ou serviço de assinatura
-        ↓
-RPC Ethereum
-        ↓
-blockchain
-```
+- `app/ingestion/`: leitura, normalização e DTOs/contratos de dados.
+- `app/features/`: medidas e sinais derivados, sem política de decisão.
+- `app/models/`: modelos estatísticos ou de ML treinados e avaliados com dados rotulados.
+- `app/tools/`: adaptadores que nodes podem invocar (perfil de carteira, consulta de protocolo etc.).
+- `app/nodes/`: passos LangGraph para coleta, análise, decisão e explicação.
+- `app/agent/`: composição do grafo e interface pública/CLI.
+- `app/visualization/`: gráficos e visualização de evidências.
 
-No escopo atual, o agente ainda não tem dados suficientes para analisar uma operação pendente em tempo real, porque faltam informações como contrato chamado, método, calldata, gas e valor em USD. O dataset atual permite principalmente uma análise histórica e um protótipo de decisão baseado no comportamento passado das carteiras.
+## Critérios para chamar uma saída de detector
+
+Antes de apresentar qualquer componente como detector de fraude, definir evento-alvo e rótulo verificável, período de observação, unidade analítica, features disponíveis no momento da decisão, baseline, métricas de avaliação e custo de falsos positivos. Sem rótulos confiáveis, apresentar como monitoramento de anomalias ou triagem de risco operacional.
+
+## Evolução posterior
+
+1. Completar features comportamentais e harmonizar schema.
+2. Adicionar dataset de eventos de stablecoin e preço histórico alinhado.
+3. Criar regras explicáveis de operação com stablecoins e avaliar alertas.
+4. Adicionar dados de governança em trilha separada.
+5. Acrescentar logs de agente, versão de modelo, política e aprovação humana para responsabilização.
+6. Só estudar execução/assinatura após existir integração explícita, limites, revisão e ambiente de teste.
