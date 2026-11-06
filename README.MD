@@ -98,6 +98,20 @@ O material de abertura sugere, entre outras possibilidades, dados históricos e 
 
 ## Como executar
 
+### Protótipo OONCA
+
+O agente em `app/agent` avalia uma operação **hipotética** antes da assinatura. A sequência LangGraph é `collect_evidence → assess_risk → explain`: lê `first_order_df.csv` em blocos, consulta `wallet_metadata.csv`, calcula regras de triagem e opcionalmente pede ao OpenRouter uma explicação em português. O LLM não decide o resultado. A pontuação é uma heurística demonstrativa, não uma probabilidade de fraude.
+
+Na raiz do projeto, após instalar `requirements.txt`:
+
+```bash
+python -m app.agent --from 0xc2d7cf95645d33006175b78989035c7c9061d3f9 --to 0x002f0c8119c16d310342d869ca8bf6ace34d9c39 --amount 0.5 --no-llm
+```
+
+Remova `--no-llm` para usar a chave `OPENROUTER_API_KEY` já configurada em `.env`. O modelo padrão é `deepseek/deepseek-v4.1-flash-1017`; a variável `OPENROUTER_MODEL` permite trocá-lo. Use `--as-of 2018-01-01T00:00:00Z` para simular a análise apenas com transações anteriores à data e `--max-eth 1` para uma regra explícita de bloqueio. O [notebook do agente](notebooks/agent_oonca.ipynb) importa as mesmas funções e mostra um gráfico da decisão.
+
+O CSV representa uma amostra histórica, com linhas que podem repetir `TxHash`. A entrada atual só suporta comparar valores de transferências ETH com o campo `Value`; essa unidade deve ser confirmada com a documentação de origem do dataset antes de uso operacional. ENS e `wallet_type` são metadados consultados posteriormente às transações. Faltam informações de token, contrato chamado, gas, operador, rótulo de fraude e autorização humana. `APPROVE` significa apenas que as regras deste protótipo não pediram revisão. O agente não assina nem envia transações.
+
 Na raiz do projeto:
 
 ```bash
