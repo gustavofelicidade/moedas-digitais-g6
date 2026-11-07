@@ -3,6 +3,19 @@
 from dataclasses import asdict, dataclass
 from datetime import datetime, timezone
 from decimal import Decimal, InvalidOperation
+import re
+
+_ETH_ADDRESS_RE = re.compile(r"^0x[0-9a-fA-F]{40}$")
+
+
+def _is_eth_address(address: str) -> bool:
+    if not isinstance(address, str):
+        return False
+    try:
+        from web3 import Web3
+        return bool(Web3.is_address(address))
+    except ImportError:
+        return bool(_ETH_ADDRESS_RE.match(address.strip()))
 
 
 @dataclass(frozen=True)
@@ -13,14 +26,25 @@ class ProposedOperation:
     operation: str = "transfer"
     asset: str = "ETH"
     as_of: datetime | None = None
+    operator_id: str | None = None
+    agent_id: str | None = "oonca_v1"
+    policy_id: str = "default_triage_v2"
 
     @classmethod
-    def from_values(cls, wallet_from: str, wallet_to: str, amount: str | float,
-                    operation: str = "transfer", asset: str = "ETH",
-                    as_of: datetime | str | None = None) -> "ProposedOperation":
-        from web3 import Web3
-
-        if not Web3.is_address(wallet_from) or not Web3.is_address(wallet_to):
+    def from_values(
+        cls,
+        wallet_from: str,
+        wallet_to: str,
+        amount: str | float | Decimal,
+        operation: str = "transfer",
+        asset: str = "ETH",
+        as_of: datetime | str | None = None,
+        *,
+        operator_id: str | None = None,
+        agent_id: str | None = "oonca_v1",
+        policy_id: str = "default_triage_v2",
+    ) -> "ProposedOperation":
+        if not _is_eth_address(wallet_from) or not _is_eth_address(wallet_to):
             raise ValueError("wallet_from e wallet_to devem ser endereços Ethereum válidos")
         try:
             value = Decimal(str(amount))
@@ -38,7 +62,20 @@ class ProposedOperation:
         asset = asset.strip().upper()
         if not operation or not asset:
             raise ValueError("operation e asset são obrigatórios")
-        return cls(wallet_from.lower(), wallet_to.lower(), value, operation, asset, as_of)
+        clean_operator = str(operator_id).strip() if operator_id else None
+        clean_agent = str(agent_id).strip() if agent_id else None
+        clean_policy = str(policy_id).strip() if policy_id else "default_triage_v2"
+        return cls(
+            wallet_from.lower(),
+            wallet_to.lower(),
+            value,
+            operation,
+            asset,
+            as_of,
+            clean_operator,
+            clean_agent,
+            clean_policy,
+        )
 
     def as_state(self) -> dict:
         data = asdict(self)

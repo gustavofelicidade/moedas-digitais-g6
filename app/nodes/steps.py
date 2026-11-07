@@ -1,11 +1,16 @@
-"""LangGraph nodes for evidence, policy, and explanation."""
+"""LangGraph nodes for evidence, policy, explanation, and accountability audit."""
 
 import json
 import os
 from typing import TypedDict
 
-from dotenv import load_dotenv
+try:
+    from dotenv import load_dotenv
+except ImportError:  # pragma: no cover
+    def load_dotenv(*_args, **_kwargs):  # type: ignore[misc]
+        return False
 
+from app.audit.trail import build_audit_record
 from app.ingestion.repository import ROOT, WalletRepository
 from app.models.risk import RiskPolicy, assess
 from app.tools.wallet import wallet_profile_tool
@@ -17,6 +22,7 @@ class AgentState(TypedDict, total=False):
     assessment: dict
     explanation: str
     llm_status: str
+    audit_record: dict
 
 
 def make_nodes(repository: WalletRepository, policy: RiskPolicy, use_llm: bool):
@@ -38,7 +44,8 @@ def make_nodes(repository: WalletRepository, policy: RiskPolicy, use_llm: bool):
         try:
             from langchain_openai import ChatOpenAI
 
-            llm = ChatOpenAI(model=os.getenv("OPENROUTER_MODEL", "deepseek/deepseek-v4.1-flash-1017"),
+            model_name = os.getenv("OPENROUTER_MODEL", "deepseek/deepseek-v4.1-flash-1017")
+            llm = ChatOpenAI(model=model_name,
                              api_key=key, base_url="https://openrouter.ai/api/v1", timeout=30,
                              max_retries=1, temperature=0)
             evidence = {"operation": state["operation"], "profile": state["profile"],
@@ -54,4 +61,8 @@ def make_nodes(repository: WalletRepository, policy: RiskPolicy, use_llm: bool):
         except Exception as exc:
             return {"explanation": basic, "llm_status": f"fallback:{type(exc).__name__}"}
 
-    return collect, score, explain
+    def audit(state: AgentState) -> dict:
+        model_version = os.getenv("OPENROUTER_MODEL", "deepseek/deepseek-v4.1-flash-1017") if state.get("llm_status") == "ok" else None
+        return {"audit_record": build_audit_record(state, model_version=model_version)}
+
+    return collect, score, explain, audit

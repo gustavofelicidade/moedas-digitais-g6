@@ -74,9 +74,22 @@ O material de abertura sugere, entre outras possibilidades, dados históricos e 
 
 ```text
 .
+├── app/
+│   ├── agent/            # Grafo LangGraph (analyze, batch_analyze) e CLI
+│   ├── audit/            # Rastreabilidade, hash SHA-256 de evidências e log JSONL
+│   ├── features/         # Engenharia de features comportamentais e proxies de automação
+│   ├── ingestion/        # Schema de operação e leitura em chunks de CSV + metadados
+│   ├── models/           # Política determinística de triagem, decomposição e contrafactuais
+│   ├── nodes/            # Nós do grafo (collect_evidence, assess_risk, explain, record_audit)
+│   ├── tools/            # Ferramentas de consulta de perfil de carteira
+│   └── visualization/    # Painel visual de 4 quadrantes para apoio à decisão
 ├── docs/
-│   └── Desafio_de_Dados_FGV_7_Abertura.pdf
+│   ├── Desafio_de_Dados_FGV_7_Abertura.pdf
+│   ├── datatype-for-agents-theme.md
+│   └── operator-on-chain-agent.md
 ├── notebooks/
+│   ├── agent_oonca.ipynb
+│   ├── defi-exploit-trends-2016-2025-a-data-driven-tour.ipynb
 │   └── eda-gustavo.ipynb
 ├── data/                 # dataset local; não versionar dados sensíveis ou muito grandes
 ├── requirements.txt
@@ -100,15 +113,15 @@ O material de abertura sugere, entre outras possibilidades, dados históricos e 
 
 ### Protótipo OONCA
 
-O agente em `app/agent` avalia uma operação **hipotética** antes da assinatura. A sequência LangGraph é `collect_evidence → assess_risk → explain`: lê `first_order_df.csv` em blocos, consulta `wallet_metadata.csv`, calcula regras de triagem e opcionalmente pede ao OpenRouter uma explicação em português. O LLM não decide o resultado. A pontuação é uma heurística demonstrativa, não uma probabilidade de fraude.
+O agente em `app/agent` avalia uma operação **hipotética** antes da assinatura. A sequência LangGraph é `collect_evidence → assess_risk → explain → record_audit`: lê `first_order_df.csv` em blocos, consulta `wallet_metadata.csv` (para carteira de origem e de destino), calcula features comportamentais e proxies de automação em `app/features/wallet_behavior.py` (cadência inter-transação $\Delta t$, *rapid-fire ratio*, índice de *burstiness*, entropia horária e HHI de destinatários), avalia regras determinísticas com recomendações contrafactuais em `app/models/risk.py`, gera opcionalmente uma explicação em português via OpenRouter e registra uma trilha de auditoria e responsabilização com hash SHA-256 em `app/audit/trail.py`. O LLM não decide o resultado. A pontuação é uma heurística demonstrativa, não uma probabilidade de fraude.
 
 Na raiz do projeto, após instalar `requirements.txt`:
 
 ```bash
-python -m app.agent --from 0xc2d7cf95645d33006175b78989035c7c9061d3f9 --to 0x002f0c8119c16d310342d869ca8bf6ace34d9c39 --amount 0.5 --no-llm
+python -m app.agent --from 0xc2d7cf95645d33006175b78989035c7c9061d3f9 --to 0x002f0c8119c16d310342d869ca8bf6ace34d9c39 --amount 0.5 --operator-id mesa_01 --audit-log audit_trail.jsonl --no-llm
 ```
 
-Remova `--no-llm` para usar a chave `OPENROUTER_API_KEY` já configurada em `.env`. O modelo padrão é `deepseek/deepseek-v4.1-flash-1017`; a variável `OPENROUTER_MODEL` permite trocá-lo. Use `--as-of 2018-01-01T00:00:00Z` para simular a análise apenas com transações anteriores à data e `--max-eth 1` para uma regra explícita de bloqueio. O [notebook do agente](notebooks/agent_oonca.ipynb) importa as mesmas funções e mostra um gráfico da decisão.
+Remova `--no-llm` para usar a chave `OPENROUTER_API_KEY` já configurada em `.env`. O modelo padrão é `deepseek/deepseek-v4.1-flash-1017`; a variável `OPENROUTER_MODEL` permite trocá-lo. Use `--as-of 2018-01-01T00:00:00Z` para simular a análise apenas com transações anteriores à data, `--max-eth 1` para uma regra explícita de bloqueio e `--audit-log caminho.jsonl` para persistir o registro de auditoria. O [notebook do agente](notebooks/agent_oonca.ipynb) importa `analyze`, `batch_analyze` e `plot_operator_dashboard` para exibir o painel visual de 4 quadrantes e comparar múltiplos cenários em lote.
 
 O CSV representa uma amostra histórica, com linhas que podem repetir `TxHash`. A entrada atual só suporta comparar valores de transferências ETH com o campo `Value`; essa unidade deve ser confirmada com a documentação de origem do dataset antes de uso operacional. ENS e `wallet_type` são metadados consultados posteriormente às transações. Faltam informações de token, contrato chamado, gas, operador, rótulo de fraude e autorização humana. `APPROVE` significa apenas que as regras deste protótipo não pediram revisão. O agente não assina nem envia transações.
 
