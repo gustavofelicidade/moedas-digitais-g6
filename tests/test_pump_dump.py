@@ -4,6 +4,7 @@ from pathlib import Path
 from unittest.mock import Mock
 
 import pandas as pd
+from lightgbm import LGBMClassifier
 
 from app.agent.pump_dump import build_pump_agent
 from app.features.pump_dump import build_features, label_features
@@ -58,6 +59,7 @@ class PumpDumpTests(unittest.TestCase):
         labeled = label_features(features, read_events(self.events), 5)
         cutoff = self.cutoff + pd.Timedelta(seconds=30)
         model, metrics = train(labeled, 5, cutoff, 0.5)
+        self.assertIsInstance(model.classifier, LGBMClassifier)
         self.assertEqual(metrics["training_positives"], 1)
         self.assertEqual(metrics["test_positives"], 1)
         self.assertEqual(metrics["excluded_chunks"], 6)

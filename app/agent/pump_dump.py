@@ -34,7 +34,7 @@ def build_pump_agent(model: PumpModel):
         for index, row in detections.loc[detections["status"].eq(ALERT)].iterrows():
             detections.at[index, "explanation"] = (
                 f"Padrão compatível com início de pump em {row['exchange']} {row['symbol']}. "
-                f"Score da floresta {row['score']:.3f} (limiar {model.threshold:g}). "
+                f"Score do detector {row['score']:.3f} (limiar {model.threshold:g}). "
                 f"Média de rush orders por janela: {row['avg_rush_orders']:.3f}. "
                 f"Desvio padrão da contagem de negócios: {row['std_trades']:.3f}."
             )

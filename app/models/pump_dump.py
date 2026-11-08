@@ -1,13 +1,13 @@
-"""Random Forest pump-start classifier and deterministic alert policy."""
+"""LightGBM pump-start classifier and deterministic alert policy."""
 
 from dataclasses import dataclass
 
 import pandas as pd
-from sklearn.ensemble import RandomForestClassifier
+from lightgbm import LGBMClassifier
 from sklearn.metrics import average_precision_score, f1_score, precision_score, recall_score
+from sklearn.utils.class_weight import compute_sample_weight
 
 from app.features.pump_dump import FEATURES
-from app.ingestion.pump_dump import MARKET
 
 
 ALERT = "SUSPECTED_PUMP"
@@ -16,7 +16,7 @@ COOLDOWN = pd.Timedelta(minutes=30)
 
 @dataclass
 class PumpModel:
-    classifier: RandomForestClassifier
+    classifier: LGBMClassifier
     chunk_seconds: int
     threshold: float
 
@@ -49,10 +49,13 @@ def train(
         if part["label"].nunique() < 2:
             raise ValueError(f"O período de {name} precisa conter janelas positivas e negativas após a separação")
 
-    classifier = RandomForestClassifier(
-        n_estimators=200, max_depth=4, min_samples_leaf=6, class_weight="balanced", random_state=42
+    classifier = LGBMClassifier(
+        objective="binary", n_estimators=200, max_depth=4, num_leaves=16,
+        min_child_samples=6, random_state=42, verbosity=-1,
     )
-    classifier.fit(training[FEATURES], training["label"])
+    training_labels = training["label"]
+    weights = compute_sample_weight("balanced", training_labels)
+    classifier.fit(training[FEATURES], training_labels, sample_weight=weights)
     model = PumpModel(classifier, chunk_seconds, threshold)
     scored = model.score(test)
     predicted = scored["status"].eq(ALERT)
