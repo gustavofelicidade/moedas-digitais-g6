@@ -12,7 +12,9 @@ def parse_timestamp(values: pd.Series) -> pd.Series:
     """Read ISO timestamps (UTC if unspecified) or integer Unix milliseconds."""
     values = values.astype("string").str.strip()
     milliseconds = values.str.fullmatch(r"[0-9]+", na=False)
-    parsed = pd.to_datetime(values.where(~milliseconds), format="ISO8601", utc=True, errors="coerce")
+    parsed = pd.to_datetime(
+        values.where(~milliseconds), format="ISO8601", utc=True, errors="coerce"
+    ).dt.as_unit("ns").copy()
     parsed.loc[milliseconds] = pd.to_datetime(
         pd.to_numeric(values[milliseconds], errors="coerce"), unit="ms", utc=True, errors="coerce"
     )
