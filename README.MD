@@ -142,6 +142,10 @@ jupyter lab
 
 O notebook seleciona automaticamente o primeiro arquivo compatível encontrado em `data/`. Para escolher um arquivo específico, defina `DATA_FILE` na célula de ingestão.
 
+### Monitor de pump and dump
+
+O agente de vigilância de mercado usa negócios individuais e horários de pumps documentados para rotular janelas, treinar um modelo LightGBM e emitir alertas de suspeita. O [guia do monitor](docs/pump-dump-agent.md) detalha os arquivos de entrada, os comandos e as diferenças metodológicas em relação ao artigo.
+
 ## Entrega
 
 - formato: apresentação em PDF;
