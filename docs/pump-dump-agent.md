@@ -18,7 +18,7 @@ Coloque os arquivos locais em `data/pump_dump/`. A ingestão aceita CSV com cabe
 - O [dataset dos autores](https://github.com/SystemsLab-Sapienza/pump-and-dump-dataset#the-dataset) fornece os eventos em `pump_telegram.csv`. Para o CSV canônico, combine `date` e `hour` em UTC e converta `SYM` para `SYM/BTC`. O catálogo registra o horário do anúncio em minutos. Prefira o timestamp original ou um início revisado quando disponíveis, sobretudo para janelas de 5 segundos. Use somente eventos com negócios disponíveis no mesmo par e exchange.
 - O [arquivo público da Binance](https://github.com/binance/binance-public-data#spot) disponibiliza `aggTrades`. Converta a unidade original do timestamp para o formato de entrada. Para `isBuyerMaker=true`, o agressor vendeu (`sell`). Para `false`, comprou (`buy`). No exportador dos autores, `amount` corresponde a `quantity`.
 
-Candles OHLCV de um minuto e os CSVs de carteiras do OONCA não trazem a sequência de execuções necessária para calcular as `rush orders`.
+Candles OHLCV de um minuto e os CSVs de carteiras do OONCA não trazem a sequência de execuções necessária para calcular as `rush orders`. O arquivo diário do [Kaggle `coin_Ethereum.csv`](https://www.kaggle.com/datasets/sudalairajkumar/cryptocurrencypricehistory?select=coin_Ethereum.csv), salvo localmente em `data/Coin_Ethereum/`, pode contextualizar o regime amplo de preço/volatilidade do ETH, mas não é entrada compatível com este detector: não contém negócios individuais, lado agressor nem granularidade intradiária.
 
 ## Execução
 

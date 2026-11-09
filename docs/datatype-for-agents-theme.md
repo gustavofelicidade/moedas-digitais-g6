@@ -52,6 +52,10 @@ Stablecoins para incluir:
 
 `USDT`, `USDC`, `DAI`, `FDUSD`, `USDe`, `PYUSD`, `TUSD`.
 
+Dataset já incorporado à análise da Giulia:
+
+- [SNAP Stanford — Stablecoin ERC20 Transactions Dataset](https://snap.stanford.edu/data/ERC20-stablecoins.html): mais de 70 milhões de transferências ERC-20 de USDT, USDC, DAI, UST, PAX e WLUNA, além de preços diários em USD e eventos de mercado, entre abril e novembro de 2022. Os arquivos locais estão em `data/ERC20-stablecoins/`; o V3 é usado para agregar transferências por dia e token no notebook de entrega. Serve para análise retrospectiva de atividade e desvios de paridade, não como rótulo de fraude nem como dado em tempo real.
+
 ### 4. Governança e votação
 
 Para testar concentração, coordenação e poder delegado:
@@ -138,6 +142,10 @@ Esses dados não respondem sozinhos à pergunta sobre agentes, mas ajudam a cont
 - `stablecoin depeg historical events`
 - `Ethereum gas prices historical dataset`
 
+Dataset local de apoio macro:
+
+- [Kaggle — Cryptocurrency Historical Prices (`coin_Ethereum.csv`)](https://www.kaggle.com/datasets/sudalairajkumar/cryptocurrencypricehistory?select=coin_Ethereum.csv): 2.160 observações diárias de ETH, de 2015-08-08 a 2021-07-06, com `High`, `Low`, `Open`, `Close`, `Volume` e `Marketcap`. O arquivo local está em `data/Coin_Ethereum/coin_Ethereum.csv`. Pode contextualizar regimes de preço/volatilidade; por ser diário e agregado, não fornece evidência de fraude nem substitui dados de negócios individuais.
+
 ### 8. Identidade, rótulos e classificação de carteiras
 
 Para relacionar carteiras a exchanges, protocolos, bots ou operadores:
@@ -182,4 +190,4 @@ Eu começaria por:
 7. **Rótulos de carteiras**
 8. **Logs de agentes e auditoria**
 
-Uma combinação viável seria: **transações + eventos de stablecoins + governança + rótulos de carteiras + dados de falha/gas**. Se não encontrarem evidência confiável de IA, o projeto pode tratar “agentes automatizados” como uma categoria observável e deixar “agentes de IA” como limitação ou extensão futura. 
+Uma combinação viável seria: **transações + eventos de stablecoins + governança + rótulos de carteiras + dados de falha/gas**. Se não encontrarem evidência confiável de IA, o projeto pode tratar “agentes automatizados” como uma categoria observável e deixar “agentes de IA” como limitação ou extensão futura.

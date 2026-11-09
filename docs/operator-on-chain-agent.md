@@ -28,7 +28,8 @@ São hipóteses de detecção, condicionadas a dados apropriados. Um alerta apon
 | Hipótese | Evidências/dados necessários | Estado |
 |---|---|---|
 | Transferência incomum ou destino novo | histórico por carteira, valor, destinatário e política de limite | Triagem parcial já existe para ETH |
-| Uso anômalo de stablecoin ou movimentação em torno de depeg | eventos ERC-20, identificação de token e série histórica de preço/liquidez | Ainda sem dados |
+| Uso anômalo de stablecoin ou movimentação em torno de depeg | eventos ERC-20, identificação de token, transferências e preços históricos | Monitoramento retrospectivo SNAP implementado; não é detector de fraude nem preço em tempo real |
+| Pump and dump / manipulação de mercado | negócios com preço, quantidade, lado agressor e eventos de pump com fonte | Monitor experimental LightGBM separado em `app/agent/pump_dump.py`; precisa dos CSVs de negócios/eventos descritos em `docs/pump-dump-agent.md` |
 | Wash trading ou volume artificial em DEX | swaps decodificados, pool/token, participantes e sequência temporal | Ainda sem dados |
 | Ataque ou captura de governança | propostas, votos, poder delegado, delegações, quórum e execução | Ainda sem dados |
 | Rug pull, exploit ou desvio de fundos | eventos/trace de contratos, fluxo de ativos e rótulos de incidentes validados | Ainda sem dados |
@@ -85,6 +86,18 @@ Em paralelo, escolher uma rede e um protocolo ou stablecoin para delimitar a col
 
 Não é necessário baixar todos os conjuntos de dados antes de avançar. Primeiro validar um recorte pequeno e reproduzível. A integração não deve chamar qualquer transferência de stablecoin de “compra”: a operação precisa ser classificada por evento/contrato.
 
+### SNAP ERC-20 stablecoins — monitoramento retrospectivo
+
+O conjunto local em `data/ERC20-stablecoins/` contém transferências ERC-20, preços diários USD e eventos de mercado. `app/ingestion/stablecoin.py` lê preços/eventos e agrega o CSV de transferências em blocos de memória; `app/features/stablecoin.py` junta o painel e sinaliza desvio intradiário de 2% ou mais em relação a US$ 1. A granularidade de transferências agregadas é token/dia e não permite atribuir um alerta a uma carteira ou a uma operação individual.
+
+O monitor é **retrospectivo e exploratório**. A regra de 2% é um limiar demonstrativo, os eventos do catálogo são poucos e não constituem rótulos completos de fraude. Um desvio de paridade pode decorrer de estresse de mercado sem fraude. Para avaliar uma operação atual, será necessário obter preço e liquidez contemporâneos e preservar o timestamp “as of” da consulta.
+
+O catálogo do SNAP identifica TerraUSD como `ustc`; o código harmoniza esse nome para `UST`. A análise usa V3, a janela temporal mais extensa indicada pela [página do dataset SNAP](https://snap.stanford.edu/data/ERC20-stablecoins.html). O V3 bruto tem vários gigabytes e fica fora do Git; a agregação compacta é gerada em `data/ERC20-stablecoins/derived/token_daily_metrics_V3.csv`.
+
+### Detecção de pump and dump do Arick
+
+O monitor em `app/agent/pump_dump.py` é outra trilha: classifica janelas de negócios de mercado com um modelo LightGBM e horários de eventos documentados. Ele não consome transferências ERC-20 do SNAP: transferências on-chain não incluem o preço, quantidade negociada e lado agressor necessários às features atuais. Use os contratos CSV, comandos e limitações em `docs/pump-dump-agent.md`. Os alertas são suspeitas para revisão e não confirmação de manipulação.
+
 ## Papéis sugeridos para os diretórios
 
 - `app/ingestion/`: leitura, normalização e DTOs/contratos de dados.
@@ -102,8 +115,9 @@ Antes de apresentar qualquer componente como detector de fraude, definir evento-
 ## Evolução posterior
 
 1. Completar features comportamentais e harmonizar schema.
-2. Adicionar dataset de eventos de stablecoin e preço histórico alinhado.
-3. Criar regras explicáveis de operação com stablecoins e avaliar alertas.
-4. Adicionar dados de governança em trilha separada.
-5. Acrescentar logs de agente, versão de modelo, política e aprovação humana para responsabilização.
-6. Só estudar execução/assinatura após existir integração explícita, limites, revisão e ambiente de teste.
+2. Validar o monitor SNAP retrospectivo com análise de sensibilidade a outros limiares e cobertura temporal.
+3. Obter preços/liquidez atuais para apoiar triagem pré-assinatura de operações com stablecoins.
+4. Avaliar o monitor de pump and dump com negócios/eventos reproduzíveis e teste temporal.
+5. Adicionar dados de governança em trilha separada.
+6. Acrescentar logs de agente, versão de modelo, política e aprovação humana para responsabilização.
+7. Só estudar execução/assinatura após existir integração explícita, limites, revisão e ambiente de teste.
