@@ -8,7 +8,7 @@ from lightgbm import LGBMClassifier
 
 from app.agent.pump_dump import build_pump_agent
 from app.features.pump_dump import build_features, label_features
-from app.ingestion.pump_dump import read_events, read_trades
+from app.ingestion.pump_dump import parse_timestamp, read_events, read_trades
 from app.models.pump_dump import ALERT, PumpModel, train
 
 
@@ -37,6 +37,13 @@ class PumpDumpTests(unittest.TestCase):
             "exchange", "symbol", "timestamp", "price", "quantity", "side", "segment",
         ]).to_csv(self.trades, index=False)
         pd.DataFrame(events, columns=["exchange", "symbol", "timestamp"]).to_csv(self.events, index=False)
+
+    def test_timestamps_preserve_milliseconds_with_whole_second_iso_values(self):
+        parsed = parse_timestamp(pd.Series(["2024-01-01T00:00:00Z", "1704067200123"]))
+        self.assertEqual(parsed.tolist(), [
+            pd.Timestamp("2024-01-01T00:00:00Z"),
+            pd.Timestamp("2024-01-01T00:00:00.123Z"),
+        ])
 
     def test_event_boundary_and_causal_features(self):
         trades = read_trades(self.trades)
