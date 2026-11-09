@@ -5,3 +5,4 @@ data/
 .DS_Store
 data/Ethereum-Transactions-for-Fraud-Detection
 .env
+/ml_models/pump_dump_lightgbm.ipynb
